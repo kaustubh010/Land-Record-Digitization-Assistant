@@ -68,10 +68,10 @@ export function CSVUploader({ onUploadSuccess }: CSVUploaderProps) {
   };
 
   const handleImagesChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    // if (e.target.files) {
-    //   setSelectedImages(Array.from(e.target.files));
-    // }
-    return;
+    if (e.target.files) {
+      setSelectedImages(Array.from(e.target.files));
+      setUploadStatus({ type: null, message: "" });
+    }
   };
 
   const handleUpload = async () => {
@@ -122,7 +122,7 @@ export function CSVUploader({ onUploadSuccess }: CSVUploaderProps) {
 
         toast({
           title: "Processing complete",
-          description: `${data.count} parcels ${selectedCsv ? 'uploaded' : 'extracted'} successfully`
+          description: `${data.count} parcels ${selectedCsv ? 'uploaded' : 'processed'} successfully`
         });
 
         if (onUploadSuccess) onUploadSuccess();
@@ -148,53 +148,67 @@ export function CSVUploader({ onUploadSuccess }: CSVUploaderProps) {
   };
 
   return (
-    <Card>
-      <CardHeader className="pb-2">
-        <CardTitle className="text-sm flex items-center gap-2">
+    <Card className="border-2 border-primary/10 shadow-md overflow-hidden">
+      <CardHeader className="pb-3 bg-primary/5 border-b border-primary/10">
+        <CardTitle className="text-sm font-bold flex items-center gap-2 text-primary">
           <Upload className="h-4 w-4" />
-          Upload Data
+          Data Record Uploader
         </CardTitle>
       </CardHeader>
 
-      <CardContent className="space-y-4">
-        <div className="space-y-2">
-          <label className="text-xs font-medium">1. Select CSV File (Optional)</label>
-          <input
-            ref={fileInputRef}
-            type="file"
-            accept=".csv"
-            onChange={handleCsvChange}
-            className="block w-full text-xs text-muted-foreground file:mr-4 file:py-1 file:px-2 file:rounded-md file:border-0 file:text-xs file:font-semibold file:bg-primary file:text-primary-foreground hover:file:bg-primary/90"
-          />
-        </div>
+      <CardContent className="space-y-5 pt-5">
+        <div className="space-y-3">
+          <div className="bg-muted/30 p-3 rounded-lg border border-dashed border-muted-foreground/30 hover:bg-muted/50 transition-colors">
+            <label className="text-xs font-semibold block mb-2 text-muted-foreground uppercase tracking-wider">
+              1. Master CSV (Meta Data)
+            </label>
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept=".csv"
+              onChange={handleCsvChange}
+              className="block w-full text-xs text-muted-foreground file:mr-3 file:py-1.5 file:px-3 file:rounded-full file:border-0 file:text-xs file:font-semibold file:bg-secondary file:text-secondary-foreground hover:file:bg-secondary/80 cursor-pointer"
+            />
+            {selectedCsv && (
+               <p className="mt-2 text-[10px] text-green-600 font-medium">✓ {selectedCsv.name} selected</p>
+            )}
+          </div>
 
-        <div className="space-y-2">
-          <label className="text-xs font-medium">2. Select Document Images (Optional)</label>
-          <input
-            ref={imageInputRef}
-            type="file"
-            accept="image/*,.pdf"
-            multiple
-            onChange={handleImagesChange}
-            className="block w-full text-xs text-muted-foreground file:mr-4 file:py-1 file:px-2 file:rounded-md file:border-0 file:text-xs file:font-semibold file:bg-primary file:text-primary-foreground hover:file:bg-primary/90"
-          />
+          <div className="bg-muted/30 p-3 rounded-lg border border-dashed border-muted-foreground/30 hover:bg-muted/50 transition-colors">
+            <label className="text-xs font-semibold block mb-2 text-muted-foreground uppercase tracking-wider">
+              2. Land Records (Images/PDF)
+            </label>
+            <input
+              ref={imageInputRef}
+              type="file"
+              accept="image/*,.pdf"
+              multiple
+              onChange={handleImagesChange}
+              className="block w-full text-xs text-muted-foreground file:mr-3 file:py-1.5 file:px-3 file:rounded-full file:border-0 file:text-xs file:font-semibold file:bg-primary file:text-primary-foreground hover:file:bg-primary/90 cursor-pointer"
+            />
+            {selectedImages.length > 0 && (
+               <p className="mt-2 text-[10px] text-primary font-medium">✓ {selectedImages.length} file(s) selected</p>
+            )}
+          </div>
         </div>
 
         <Button
           size="sm"
-          className="w-full"
+          className="w-full font-bold shadow-sm"
           onClick={handleUpload}
           disabled={uploading || (!selectedCsv && selectedImages.length === 0)}
         >
           {uploading ? (
             <>
               <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-              Processing (AI OCR)
+              Processing Records...
             </>
           ) : (
             <>
-              <Upload className="mr-2 h-4 w-4" />
-              Upload & Process
+              <div className="flex items-center justify-center gap-2">
+                <Upload className="h-4 w-4" />
+                Upload & Update Map
+              </div>
             </>
           )}
         </Button>
@@ -202,18 +216,23 @@ export function CSVUploader({ onUploadSuccess }: CSVUploaderProps) {
         {uploadStatus.type && (
           <Alert
             variant={uploadStatus.type === "error" ? "destructive" : "default"}
+            className="py-2"
           >
-            <AlertDescription className="text-xs">
+            <AlertDescription className="text-xs font-medium text-center">
               {uploadStatus.message}
             </AlertDescription>
           </Alert>
         )}
 
-        <div className="text-[10px] text-muted-foreground space-y-1 bg-muted/30 p-2 rounded">
-          <p className="font-semibold">Support:</p>
-          <p>• Upload CSV for bulk parcel metadata.</p>
-          <p>• Upload Images for automated AI extraction & History.</p>
-          <p>• Mix both: AI matches image data to CSV records.</p>
+        <div className="text-[10px] text-muted-foreground bg-secondary/20 p-3 rounded-lg border border-secondary/30">
+          <p className="font-bold mb-1 flex items-center gap-1">
+            <span className="h-1.5 w-1.5 rounded-full bg-primary animate-pulse" />
+            Instant Update Support:
+          </p>
+          <ul className="space-y-1 pl-1">
+            <li>• CSV: Bulk metadata updates for all plots.</li>
+            <li>• Images: Upload any land record to see <strong>Plot 2</strong> history instantly.</li>
+          </ul>
         </div>
       </CardContent>
     </Card>

@@ -139,75 +139,107 @@ export async function POST(request: NextRequest) {
         results.push(parcel);
       }
     } 
-    // ================= CASE 2: IMAGE ONLY (AI-DRIVEN) =================
+    // ================= CASE 2: IMAGE ONLY (DEMO/MOCK) =================
     else {
       // Clear user parcels
       await prisma.parcel.deleteMany({ where: { userId: user.id } });
 
       for (const imageFile of imageFiles) {
-        const buffer = Buffer.from(await imageFile.arrayBuffer());
-        const rawText = await performOCR(buffer);
-        const extractedData = await extractDataFromText(rawText);
+        // MOCK DATA for Plot 2 (as requested)
+        const plotId = "2";
+        const ownerName = "Suresh Kumar Sharma";
+        const areaRecord = 2.50;
+        const aadhaarNumber = "222233334444";
 
-        if (!extractedData.plotNumber) {
-          console.warn(`Skipping image ${imageFile.name}: No plot number extracted.`);
-          continue;
-        }
-
-        // Create the Parcel from AI data
+        // Create the Parcel from Demo data
         const parcel = await prisma.parcel.create({
           data: {
-            plotId: extractedData.plotNumber,
-            ownerName: extractedData.ownerName || 'Unknown Owner',
-            aadhaarNumber: extractedData.aadhaarNumber,
-            areaRecord: extractedData.area || 0,
+            plotId,
+            ownerName,
+            aadhaarNumber,
+            areaRecord,
             userId: user.id,
-            north: extractedData.north,
-            south: extractedData.south,
-            east: extractedData.east,
-            west: extractedData.west,
+            north: null,
+            south: null,
+            east: null,
+            west: null,
           }
         });
 
         const doc = await prisma.document.create({
           data: {
             parcelId: parcel.id,
-            rawOcrText: rawText,
-            extractedData: extractedData as any,
+            rawOcrText: "MOCK OCR TEXT FOR DEMO",
+            extractedData: {
+                plotNumber: plotId,
+                ownerName,
+                area: areaRecord,
+                aadhaarNumber,
+            } as any,
           }
         });
 
-        // Current record entry
-        await prisma.plotHistory.create({
-          data: {
-            parcelId: parcel.id,
-            ownerName: extractedData.ownerName || 'Unknown Owner',
-            aadhaarNumber: extractedData.aadhaarNumber,
-            area: extractedData.area || 0,
-            transactionType: 'extraction',
-            sourceDocumentId: doc.id,
-          }
-        });
+        // History entries from seed_history.ts
+        const historyEntries = [
+            {
+              ownerName: "Suresh Kumar Sharma",
+              transactionType: "Khatedar Owner",
+              ownershipStartDate: null,
+              ownershipEndDate: null,
+              documentNo: "Sale Deed 123/2024",
+              remarks: "(Transition to current ROR)",
+              area: 2.50,
+            },
+            {
+              ownerName: "Geeta Devi W/o Dinesh Kumar",
+              transactionType: "Khatedar Owner",
+              ownershipStartDate: new Date("2019-01-01"),
+              ownershipEndDate: new Date("2023-12-31"),
+              documentNo: "Sale Deed 202/2019",
+              remarks: "(Sold to Entry 1)",
+              area: 2.50,
+            },
+            {
+              ownerName: "Rampura Village Cooperative Society Ltd.",
+              transactionType: "Village Leaseholder",
+              ownershipStartDate: new Date("2010-01-01"),
+              ownershipEndDate: new Date("2018-12-31"),
+              documentNo: "Lease Agreement 50/2010",
+              remarks: "(Lease for community farming)",
+              area: 2.50,
+            },
+            {
+              ownerName: "Mahendra Singh S/o Late Partap Singh",
+              transactionType: "Khatedar Owner",
+              ownershipStartDate: new Date("2000-01-01"),
+              ownershipEndDate: new Date("2009-12-31"),
+              documentNo: "Succession Certificate 10/2000",
+              remarks: "(Inherited from father)",
+              area: 2.50,
+            },
+            {
+              ownerName: "Partap Singh S/o Late Kanhaiya Lal",
+              transactionType: "Allotted Khatedar Owner",
+              ownershipStartDate: new Date("1975-08-15"),
+              ownershipEndDate: new Date("1999-12-31"),
+              documentNo: "Revenue Allotment Order 300/1975",
+              remarks: "(Government Land Allotment)",
+              area: 2.50,
+            },
+          ];
 
-        // Past history entries
-        if (extractedData.history) {
-          for (const tx of extractedData.history) {
-            await prisma.plotHistory.create({
-              data: {
-                parcelId: parcel.id,
-                ownerName: tx.owner || extractedData.ownerName || 'Unknown',
-                area: tx.area || extractedData.area || 0,
-                transactionType: tx.type || 'History',
-                sourceDocumentId: doc.id,
-                ownershipStartDate: parseExtractedDate(tx.date),
-                ownershipEndDate: parseExtractedDate(tx.endDate),
-                documentNo: tx.documentNo,
-                remarks: tx.remarks
-              }
-            });
-          }
+        for (const entry of historyEntries) {
+          await prisma.plotHistory.create({
+            data: {
+              parcelId: parcel.id,
+              sourceDocumentId: doc.id,
+              ...entry,
+            }
+          });
         }
         results.push(parcel);
+        // Only one parcel for demo purposes
+        break; 
       }
     }
 
