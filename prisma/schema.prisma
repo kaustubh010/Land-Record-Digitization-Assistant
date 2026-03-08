@@ -1,0 +1,116 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id             String      @id
+  googleId       String?     @unique @map("google_id")
+  email          String      @unique
+  hashedPassword String      @map("hashed_password")
+  name           String?     @map("full_name")
+  picture        String?     @map("profile_picture")
+  createdAt      DateTime    @default(now()) @map("created_at")
+  updatedAt      DateTime    @default(now()) @updatedAt @map("updated_at")
+  sessions       Session[]
+  parcels        Parcel[]
+  changeLogs     ChangeLog[]
+
+  @@map("users")
+}
+
+model Session {
+  id        String   @id
+  userId    String   @map("user_id")
+  expiresAt DateTime @map("expires_at")
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("sessions")
+}
+
+model Parcel {
+  id          String      @id @default(cuid())
+  plotId      String      @map("plot_id")
+  ownerName   String      @map("owner_name")
+  areaRecord  Float       @map("area_record")
+  userId      String      @map("user_id")
+  user        User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt   DateTime    @default(now()) @map("created_at")
+  updatedAt   DateTime    @updatedAt @map("updated_at")
+  north       Float?
+  south       Float?
+  east        Float?
+  west        Float?
+  aadhaarNumber String?     @map("aadhaar_number")
+  changeLogs  ChangeLog[]
+  documents   Document[]
+  history     PlotHistory[]
+
+  @@unique([userId, plotId])
+  @@index([userId])
+  @@index([plotId])
+  @@map("parcels")
+}
+
+model ChangeLog {
+  id          String   @id @default(cuid())
+  parcelId    String?  @map("parcel_id")
+  parcel      Parcel?  @relation(fields: [parcelId], references: [id], onDelete: SetNull)
+  userId      String   @map("user_id")
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  action      String   // "create", "update", "delete", "bulk_upload"
+  fieldName   String?  @map("field_name")
+  oldValue    String?  @map("old_value")
+  newValue    String?  @map("new_value")
+  description String?
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  @@index([userId])
+  @@index([parcelId])
+  @@index([createdAt])
+  @@map("change_logs")
+}
+
+model Document {
+  id           String      @id @default(cuid())
+  parcelId     String      @map("parcel_id")
+  parcel       Parcel      @relation(fields: [parcelId], references: [id], onDelete: Cascade)
+  rawOcrText   String?     @map("raw_ocr_text") @db.Text
+  extractedData Json?      @map("extracted_data")
+  uploadedAt   DateTime    @default(now()) @map("uploaded_at")
+  history      PlotHistory[]
+
+  @@index([parcelId])
+  @@map("documents")
+}
+
+model PlotHistory {
+  id                  String   @id @default(cuid())
+  parcelId            String   @map("parcel_id")
+  parcel              Parcel   @relation(fields: [parcelId], references: [id], onDelete: Cascade)
+  ownerName           String   @map("owner_name")
+  ownershipStartDate  DateTime? @map("ownership_start_date")
+  ownershipEndDate    DateTime? @map("ownership_end_date")
+  transactionType     String   @map("transaction_type") // e.g., "buy", "sell", "transfer", "initial"
+  area                Float
+  sourceDocumentId    String?  @map("source_document_id")
+  sourceDocument      Document? @relation(fields: [sourceDocumentId], references: [id], onDelete: SetNull)
+  remarks             String?
+  documentNo          String?  @map("document_no")
+  aadhaarNumber       String?  @map("aadhaar_number")
+  createdAt           DateTime @default(now()) @map("created_at")
+
+  @@index([parcelId])
+  @@index([sourceDocumentId])
+  @@map("plot_history")
+}
