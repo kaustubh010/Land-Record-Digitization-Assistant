@@ -141,9 +141,6 @@ export async function POST(request: NextRequest) {
     } 
     // ================= CASE 2: IMAGE ONLY (DEMO/MOCK) =================
     else {
-      // Clear user parcels
-      await prisma.parcel.deleteMany({ where: { userId: user.id } });
-
       for (const imageFile of imageFiles) {
         // MOCK DATA for Plot 2 (as requested)
         const plotId = "2";
@@ -151,20 +148,26 @@ export async function POST(request: NextRequest) {
         const areaRecord = 2.50;
         const aadhaarNumber = "222233334444";
 
-        // Create the Parcel from Demo data
-        const parcel = await prisma.parcel.create({
-          data: {
-            plotId,
-            ownerName,
-            aadhaarNumber,
-            areaRecord,
-            userId: user.id,
-            north: null,
-            south: null,
-            east: null,
-            west: null,
-          }
+        // Find existing parcel or create a new one — no deleteMany
+        let parcel = await prisma.parcel.findFirst({
+          where: { userId: user.id, plotId }
         });
+
+        if (!parcel) {
+          parcel = await prisma.parcel.create({
+            data: {
+              plotId,
+              ownerName,
+              aadhaarNumber,
+              areaRecord,
+              userId: user.id,
+              north: null,
+              south: null,
+              east: null,
+              west: null,
+            }
+          });
+        }
 
         const doc = await prisma.document.create({
           data: {

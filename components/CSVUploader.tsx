@@ -223,17 +223,6 @@ export function CSVUploader({ onUploadSuccess }: CSVUploaderProps) {
             </AlertDescription>
           </Alert>
         )}
-
-        <div className="text-[10px] text-muted-foreground bg-secondary/20 p-3 rounded-lg border border-secondary/30">
-          <p className="font-bold mb-1 flex items-center gap-1">
-            <span className="h-1.5 w-1.5 rounded-full bg-primary animate-pulse" />
-            Instant Update Support:
-          </p>
-          <ul className="space-y-1 pl-1">
-            <li>• CSV: Bulk metadata updates for all plots.</li>
-            <li>• Images: Upload any land record to see <strong>Plot 2</strong> history instantly.</li>
-          </ul>
-        </div>
       </CardContent>
     </Card>
   );
